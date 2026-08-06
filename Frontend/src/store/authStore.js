@@ -7,9 +7,9 @@ import { useSuggestionStore } from './suggestionStore';
 
 export const useAuthStore = create((set, get) => ({
   user: null,
-  token: getToken() || null,
-  isAuthenticated: !!getToken(),
-  isCheckingAuth: true, // For initial app load
+  token: getToken() || 'dev-mode',
+  isAuthenticated: true,
+  isCheckingAuth: false, // For initial app load
   isLoading: false, // For API calls
   error: null,
   successMessage: null,
@@ -85,21 +85,7 @@ export const useAuthStore = create((set, get) => ({
   },
 
   fetchCurrentUser: async () => {
-    const token = get().token;
-    if (!token) {
-      set({ isCheckingAuth: false, isAuthenticated: false });
-      return;
-    }
-
-    set({ isCheckingAuth: true, error: null });
-    try {
-      const user = await authService.getCurrentUser();
-      set({ user, isAuthenticated: true, isCheckingAuth: false });
-    } catch (error) {
-      console.error("Session expired or invalid");
-      get().clearAuth();
-      set({ isCheckingAuth: false });
-    }
+   set({ isCheckingAuth: false, isAuthenticated: true });
   },
 
   forgotPassword: async (email) => {

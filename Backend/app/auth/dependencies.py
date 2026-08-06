@@ -1,59 +1,26 @@
-# pyrefly: ignore [missing-import]
-from fastapi import Depends, HTTPException, status
-# pyrefly: ignore [missing-import]
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends
 from sqlalchemy.orm import Session
 from app.database.connection import get_db
-from app.auth.jwt import decode_access_token
 from app.models.user import User
-# pyrefly: ignore [missing-import]
-from fastapi import Query
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+DEV_USER_EMAIL = "dev@local.test"
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    payload = decode_access_token(token)
-    if payload is None:
-        raise credentials_exception
-        
-    user_id: str = payload.get("sub")
-    if user_id is None:
-        raise credentials_exception
-        
-    user = db.query(User).filter(User.id == int(user_id)).first()
+def _get_or_create_dev_user(db: Session) -> User:
+    user = db.query(User).filter(User.email == DEV_USER_EMAIL).first()
     if user is None:
-        raise credentials_exception
-    if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-        
+        user = User(
+            name="Dev User",
+            email=DEV_USER_EMAIL,
+            provider="local",
+            is_active=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
     return user
 
-def get_current_user_from_query(token: str = Query(None), db: Session = Depends(get_db)) -> User:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    if not token:
-        raise credentials_exception
-        
-    payload = decode_access_token(token)
-    if payload is None:
-        raise credentials_exception
-        
-    user_id: str = payload.get("sub")
-    if user_id is None:
-        raise credentials_exception
-        
-    user = db.query(User).filter(User.id == int(user_id)).first()
-    if user is None:
-        raise credentials_exception
-    if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-        
-    return user
+def get_current_user(db: Session = Depends(get_db)) -> User:
+    return _get_or_create_dev_user(db)
+
+def get_current_user_from_query(db: Session = Depends(get_db)) -> User:
+    return _get_or_create_dev_user(db)
