@@ -13,8 +13,8 @@ def load_and_split_pdf(pdf_path: str):
     documents = loader.load()
 
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
+        chunk_size=800,
+        chunk_overlap=100,
     )
 
     chunks = splitter.split_documents(documents)
@@ -31,4 +31,4 @@ def extract_raw_text_from_pdf(pdf_path: str) -> str:
     # Combine the page_content of all pages
     text = "\n".join([doc.page_content for doc in documents])
     
-    return text
+    return text
